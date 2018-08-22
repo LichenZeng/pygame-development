@@ -1,12 +1,14 @@
 #!/usr/local/bin/python3
 # -*- coding: utf-8 -*-
 
-
+# from pprint import pprint
+# import numpy as np
 import pygame
 import os
 import random
-# from pprint import pprint
-# import numpy as np
+import time
+
+USER, AI = 1, 0
 
 WIDTH = 720
 HEIGHT = 720
@@ -20,42 +22,21 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 
-pygame.init()
-pygame.mixer.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("五子棋")
-clock = pygame.time.Clock()
-
-all_sprites = pygame.sprite.Group()
-
-base_folder = os.path.dirname(__file__)
-
-# 加载各种资源
-img_folder = os.path.join(base_folder, 'images')
-background_img = pygame.image.load(os.path.join(img_folder, 'back.png')).convert()
-snd_folder = os.path.join(base_folder, 'music')
-hit_sound = pygame.mixer.Sound(os.path.join(snd_folder, 'buw.wav'))
-back_music = pygame.mixer.music.load(os.path.join(snd_folder, 'background.mp3'))
-pygame.mixer.music.set_volume(0.4)
-
-background = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
-back_rect = background.get_rect()
-
 
 # draw background lines
 def draw_background(surf):
     # 加载背景图片
     screen.blit(background, back_rect)
-    
+
     # 画网格线，棋盘为 19行 19列的
     # 1. 画出边框
     rect_lines = [
         ((GRID_WIDTH, GRID_WIDTH), (GRID_WIDTH, HEIGHT - GRID_WIDTH)),
         ((GRID_WIDTH, GRID_WIDTH), (WIDTH - GRID_WIDTH, GRID_WIDTH)),
         ((GRID_WIDTH, HEIGHT - GRID_WIDTH),
-            (WIDTH - GRID_WIDTH, HEIGHT - GRID_WIDTH)),
+         (WIDTH - GRID_WIDTH, HEIGHT - GRID_WIDTH)),
         ((WIDTH - GRID_WIDTH, GRID_WIDTH),
-            (WIDTH - GRID_WIDTH, HEIGHT - GRID_WIDTH)),
+         (WIDTH - GRID_WIDTH, HEIGHT - GRID_WIDTH)),
     ]
     for line in rect_lines:
         pygame.draw.line(surf, BLACK, line[0], line[1], 2)
@@ -79,28 +60,6 @@ def draw_background(surf):
         pygame.draw.circle(surf, BLACK, cc, 5)
 
 
-last_coin = None
-movements = []
-remain = set(range(1, 19**2 + 1))
-
-player_score_metrix = [[0] * 20 for i in range(20)]
-ai_score_metrix = [[0] * 20 for i in range(20)]
-color_metrix = [[None] * 20 for i in range(20)]
-
-ai_possible_list = []
-ai_optimal_list = []
-ai_tabu_list = []
-player_optimal_set = set()
-player_tabu_list = []
-
-
-USER, AI = 1, 0
-
-score_level = [0, 1, 10, 100, 1000, 10000, 100000, 1000000, 1000000]
-# font_name = pygame.font.match_font('华文黑体')
-font_name = pygame. font.get_default_font() 
-
-
 def draw_text(surf, text, size, x, y, color=WHITE):
     font = pygame.font.Font(font_name, size)
     text_surface = font.render(text, True, color)
@@ -121,9 +80,9 @@ def update_score(pos, color, ident):
         if hori == 4:
             hori += 1
             break
-        if left > 0 and\
+        if left > 0 and \
                 (color_metrix[left][pos[1]] == color or
-                    color_metrix[left][pos[1]] is None):
+                 color_metrix[left][pos[1]] is None):
             hori += 1
 
     right = pos[0] + 1
@@ -132,9 +91,9 @@ def update_score(pos, color, ident):
         if hori == 4:
             hori += 1
             break
-        if right < 20 and\
+        if right < 20 and \
                 (color_metrix[right][pos[1]] == color or
-                    color_metrix[right][pos[1]] is None):
+                 color_metrix[right][pos[1]] is None):
             hori += 1
 
     hori = score_level[hori]
@@ -145,9 +104,9 @@ def update_score(pos, color, ident):
         if verti == 4:
             verti += 1
             break
-        if up > 0 and\
+        if up > 0 and \
                 (color_metrix[pos[0]][up] == color or
-                    color_metrix[pos[0]][up] is None):
+                 color_metrix[pos[0]][up] is None):
             verti += 1
 
     down = pos[1] + 1
@@ -156,9 +115,9 @@ def update_score(pos, color, ident):
         if verti == 4:
             verti += 1
             break
-        if down < 20 and\
+        if down < 20 and \
                 (color_metrix[pos[0]][down] == color or
-                    color_metrix[pos[0]][down] is None):
+                 color_metrix[pos[0]][down] is None):
             verti += 1
 
     verti = score_level[verti]
@@ -171,9 +130,9 @@ def update_score(pos, color, ident):
         if backslash == 4:
             backslash += 1
             break
-        if left > 0 and up > 0 and\
+        if left > 0 and up > 0 and \
                 (color_metrix[left][up] == color or
-                    color_metrix[left][up] is None):
+                 color_metrix[left][up] is None):
             backslash += 1
 
     right = pos[0] + 1
@@ -184,9 +143,9 @@ def update_score(pos, color, ident):
         if backslash == 4:
             backslash += 1
             break
-        if right < 20 and down < 20 and\
+        if right < 20 and down < 20 and \
                 (color_metrix[right][down] == color or
-                    color_metrix[right][down] is None):
+                 color_metrix[right][down] is None):
             backslash += 1
     backslash = score_level[backslash]
 
@@ -218,7 +177,7 @@ def update_score(pos, color, ident):
     # print(pos, color, ident, (hori, verti, slash, backslash))
 
     if ident == USER:
-        player_score_metrix[pos[0]][pos[1]] =\
+        player_score_metrix[pos[0]][pos[1]] = \
             int((hori + verti + slash + backslash) * 0.9)
     else:
         ai_score_metrix[pos[0]][pos[1]] = hori + verti + slash + backslash
@@ -347,8 +306,8 @@ def get_next_move(movements, curr_move):
         if player_score_metrix[grid[0]][grid[1]] >= score_level[4]:
             next_move = i
             break
-        score = ai_score_metrix[grid[0]][grid[1]] +\
-            player_score_metrix[grid[0]][grid[1]]
+        score = ai_score_metrix[grid[0]][grid[1]] + \
+                player_score_metrix[grid[0]][grid[1]]
 
         if max_score < score:
             max_score = score
@@ -388,8 +347,10 @@ def move(surf, pos):
             bool: True is game is not over else False
             player: winner (USER or AI)
     '''
+    print("pos", pos)
     grid = (int(round(pos[0] / (GRID_WIDTH + .0))),
             int(round(pos[1] / (GRID_WIDTH + .0))))
+    print("coord", grid)
 
     if grid[0] <= 0 or grid[0] > 19:
         return
@@ -405,6 +366,7 @@ def move(surf, pos):
         return None
 
     curr_move = (pos, BLACK)
+
     add_coin(surf, BLACK, grid, USER)
 
     if game_is_over(grid, BLACK):
@@ -443,55 +405,90 @@ def show_go_screen(surf, winner=None):
                 waiting = False
 
 
-pygame.mixer.music.play(loops=-1)
+if __name__ == '__main__':
+    game_over = True
+    running = True
+    winner = None
+    movements = []
+    score_level = [0, 1, 10, 100, 1000, 10000, 100000, 1000000, 1000000]
 
+    remain = set(range(1, 19 ** 2 + 1))
+    player_score_metrix = [[0] * 20 for i in range(20)]
+    ai_score_metrix = [[0] * 20 for i in range(20)]
+    color_metrix = [[None] * 20 for i in range(20)]
 
-game_over = True
-running = True
-winner = None
-while running:
-    if game_over:
-        show_go_screen(screen, winner)
-        game_over = False
-        movements = []
-        remain = set(range(1, 19**2 + 1))
+    ai_possible_list = []
+    ai_optimal_list = []
+    ai_tabu_list = []
+    player_optimal_set = set()
+    player_tabu_list = []
 
-        player_score_metrix = [[0] * 20 for i in range(20)]
-        ai_score_metrix = [[0] * 20 for i in range(20)]
-        color_metrix = [[None] * 20 for i in range(20)]
+    # Pygame Env init
+    pygame.init()
+    pygame.mixer.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("五子棋")
+    clock = pygame.time.Clock()
+    all_sprites = pygame.sprite.Group()
+    base_folder = os.path.dirname(__file__)
+    # font_name = pygame.font.match_font('华文黑体')
+    font_name = pygame.font.get_default_font()
 
-        ai_possible_list = []
-        ai_optimal_list = []
-        ai_tabu_list = []
-        player_optimal_set = set()
-        player_tabu_list = []
+    # Pygame 加载各种资源
+    img_folder = os.path.join(base_folder, 'images')
+    background_img = pygame.image.load(os.path.join(img_folder, 'back.png')).convert()
+    snd_folder = os.path.join(base_folder, 'music')
+    hit_sound = pygame.mixer.Sound(os.path.join(snd_folder, 'buw.wav'))
+    back_music = pygame.mixer.music.load(os.path.join(snd_folder, 'background.mp3'))
+    pygame.mixer.music.set_volume(0.4)
+    background = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
+    back_rect = background.get_rect()
+    pygame.mixer.music.play(loops=-1)
 
-    # 设置屏幕刷新频率
-    clock.tick(FPS)
+    while running:
+        if game_over:
+            show_go_screen(screen, winner)
+            game_over = False
+            movements = []
+            remain = set(range(1, 19 ** 2 + 1))
 
-    # 处理不同事件
-    for event in pygame.event.get():
+            player_score_metrix = [[0] * 20 for i in range(20)]
+            ai_score_metrix = [[0] * 20 for i in range(20)]
+            color_metrix = [[None] * 20 for i in range(20)]
 
-        # 检查是否关闭窗口
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            response = move(screen, event.pos)
-            if response is not None and response[0] is False:
-                game_over = True
-                winner = response[1]
-                continue
+            ai_possible_list = []
+            ai_optimal_list = []
+            ai_tabu_list = []
+            player_optimal_set = set()
+            player_tabu_list = []
 
-    # Update
-    all_sprites.update()
+        # 设置屏幕刷新频率
+        clock.tick(FPS)
 
-    # Draw / render
-    # screen.fill(BLACK)
-    all_sprites.draw(screen)
-    draw_background(screen)
-    draw_movements(screen)
+        # 处理不同事件
+        for event in pygame.event.get():
 
-    # After drawing everything, flip the display
-    pygame.display.flip()
+            # 检查是否关闭窗口
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                response = move(screen, event.pos)
+                print("zeng>>", response)
+                if response is not None and response[0] is False:
+                    game_over = True
+                    winner = response[1]
+                    continue
 
-pygame.quit()
+        # Update
+        all_sprites.update()
+
+        # Draw / render
+        # screen.fill(BLACK)
+        all_sprites.draw(screen)
+        draw_background(screen)
+        draw_movements(screen)
+
+        # After drawing everything, flip the display
+        pygame.display.flip()
+
+    pygame.quit()
