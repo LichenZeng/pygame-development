@@ -38,6 +38,9 @@ def draw_background(surf):
         ((WIDTH - GRID_WIDTH, GRID_WIDTH),
          (WIDTH - GRID_WIDTH, HEIGHT - GRID_WIDTH)),
     ]
+    # # [((36, 36), (36, 684)), ((36, 36), (684, 36)), ((36, 684), (684, 684)), ((684, 36), (684, 684))]
+    # print(rect_lines)
+
     for line in rect_lines:
         pygame.draw.line(surf, BLACK, line[0], line[1], 2)
 
@@ -56,6 +59,9 @@ def draw_background(surf):
         (GRID_WIDTH * 4, HEIGHT - GRID_WIDTH * 4),
         (GRID_WIDTH * 10, GRID_WIDTH * 10)
     ]
+    # # [(144, 144), (576, 144), (576, 576), (144, 576), (360, 360)]
+    # print(circle_center)
+
     for cc in circle_center:
         pygame.draw.circle(surf, BLACK, cc, 5)
 
@@ -378,6 +384,20 @@ def move(surf, pos):
 def draw_movements(surf):
     for move in movements[:-1]:
         pygame.draw.circle(surf, move[1], move[0], 16)
+        # print(movements)
+        # print(type(movements))
+        # print(movements[:-1])
+        # print(movements[1])
+        # print(move)
+        # print(movements[-1][0])
+        """
+        [((144, 468), (0, 0, 0)), ((144, 504), (255, 255, 255)), ((180, 468), (0, 0, 0)), ((108, 468), (255, 255, 255)), ((324, 396), (0, 0, 0)), ((72, 432), (255, 255, 255)), ((252, 360), (0, 0, 0)), ((180, 540), (255, 255, 255))]
+        <class 'list'>
+        [((144, 468), (0, 0, 0)), ((144, 504), (255, 255, 255)), ((180, 468), (0, 0, 0)), ((108, 468), (255, 255, 255)), ((324, 396), (0, 0, 0)), ((72, 432), (255, 255, 255)), ((252, 360), (0, 0, 0))]
+        ((144, 504), (255, 255, 255))
+        ((252, 360), (0, 0, 0))
+        (180, 540)
+        """
     if movements:
         pygame.draw.circle(surf, GREEN, movements[-1][0], 16)
 
@@ -473,7 +493,6 @@ if __name__ == '__main__':
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 response = move(screen, event.pos)
-                print("zeng>>", response)
                 if response is not None and response[0] is False:
                     game_over = True
                     winner = response[1]
